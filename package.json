@@ -1,0 +1,180 @@
+{
+  "name": "buffalo-lsp",
+  "displayName": "Buffalo LSP",
+  "description": "Language Server Protocol support for Protocol Buffers with Buffalo build system",
+  "version": "0.1.0",
+  "publisher": "massonsky",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/massonsky/buffalo-vscode"
+  },
+  "bugs": {
+    "url": "https://github.com/massonsky/buffalo-vscode/issues"
+  },
+  "homepage": "https://github.com/massonsky/buffalo-vscode#readme",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Linters",
+    "Formatters"
+  ],
+  "keywords": [
+    "protobuf",
+    "protocol buffers",
+    "proto3",
+    "grpc",
+    "buffalo",
+    "lsp"
+  ],
+  "activationEvents": [
+    "onLanguage:proto",
+    "onLanguage:proto3",
+    "workspaceContains:**/*.proto",
+    "workspaceContains:buffalo.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "proto",
+        "aliases": [
+          "Protocol Buffers",
+          "protobuf",
+          "proto3"
+        ],
+        "extensions": [
+          ".proto"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "proto",
+        "scopeName": "source.proto",
+        "path": "./syntaxes/proto.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Buffalo LSP",
+      "properties": {
+        "buffalo.lsp.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable Buffalo LSP"
+        },
+        "buffalo.lsp.path": {
+          "type": "string",
+          "default": "buffalo",
+          "description": "Path to the buffalo executable"
+        },
+        "buffalo.lsp.trace.server": {
+          "type": "string",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "default": "off",
+          "description": "Traces the communication between VS Code and the language server"
+        },
+        "buffalo.validation.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable validation diagnostics"
+        },
+        "buffalo.format.onSave": {
+          "type": "boolean",
+          "default": false,
+          "description": "Format proto files on save"
+        },
+        "buffalo.permissions.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Buffalo permissions analysis"
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "buffalo.restartServer",
+        "title": "Buffalo: Restart Language Server"
+      },
+      {
+        "command": "buffalo.showOutput",
+        "title": "Buffalo: Show Output Channel"
+      },
+      {
+        "command": "buffalo.formatDocument",
+        "title": "Buffalo: Format Document"
+      },
+      {
+        "command": "buffalo.generateCode",
+        "title": "Buffalo: Generate Code from Proto"
+      },
+      {
+        "command": "buffalo.showDependencyGraph",
+        "title": "Buffalo: Show Dependency Graph"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceLangId == proto",
+          "command": "buffalo.formatDocument",
+          "group": "1_modification"
+        },
+        {
+          "when": "resourceLangId == proto",
+          "command": "buffalo.generateCode",
+          "group": "1_modification"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "buffalo.formatDocument",
+          "when": "resourceLangId == proto"
+        },
+        {
+          "command": "buffalo.generateCode",
+          "when": "resourceLangId == proto"
+        }
+      ]
+    },
+    "snippets": [
+      {
+        "language": "proto",
+        "path": "./snippets/proto.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.18.0",
+    "@typescript-eslint/parser": "^6.18.0",
+    "@vscode/test-electron": "^2.3.8",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  }
+}
