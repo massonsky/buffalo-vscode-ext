@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package example;
+
+import "buffalo/validate/validate.proto";
+message ListProductsRequest {
+  // Pagination
+  int32 page_size = 1 [(buffalo.validate.rules).int32 = {
+    gte: 1,
+    lte: 100
+  }];
+  
+  string page_token = 2 [(buffalo.validate.rules).string = {
+    max_len: 500
+  }];
+
+  // Filters
+  string category = 3 [(buffalo.validate.rules).string = {
+    max_len: 100
+  }];
+
+  double min_price = 4 [(buffalo.validate.rules).double = {
+    gte: 0.0
+  }];
+
+  double max_price = 5 [(buffalo.validate.rules).double = {
+    gte: 0.0
+  }];
+
+  // Sort
+  string sort_by = 6 [(buffalo.validate.rules).string = {
+    in: ["price", "name", "created_at", "rating"]
+  }];
+
+  SortOrder sort_order = 7;
+}
+// Message with string validations
+message UserRequest {
+  // Username validation
+  string username = 1 [(buffalo.validate.rules).string = {
+    min_len: 3,
+    max_len: 50,
+    pattern: "^[a-zA-Z0-9_]+$"
+  }];
+
+  // Email validation
+  string email = 2 [(buffalo.validate.rules).string = {
+    email: true
+  }];
+
+  // Hostname validation
+  string hostname = 8 [(buffalo.validate.rules).string = {
+    hostname: true
+  }];
+
+  // IP address validation
+  string ip_address = 9 [(buffalo.validate.rules).string = {
+    ip: true
+  }];
+}
+
+// Message with numeric validations
+message OrderRequest {
+  // Positive quantity
+  int32 quantity = 1 [(buffalo.validate.rules).int32 = {
+    gt: 0,
+    lte: 1000
+  }];
+
+  // Price must be positive
+  double price = 2 [(buffalo.validate.rules).double = {
+    gt: 0.0
+  }];
+
+  // Discount percentage
+  float discount = 3 [(buffalo.validate.rules).float = {
+    gte: 0.0,
+    lte: 100.0
+  }];
+
+  // Order ID must be positive
+  int64 order_id = 4 [(buffalo.validate.rules).int64 = {
+    gt: 0
+  }];
+
+  // Unsigned value
+  uint32 item_count = 5 [(buffalo.validate.rules).uint32 = {
+    gte: 1
+  }];
+}

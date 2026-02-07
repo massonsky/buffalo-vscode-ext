@@ -2,7 +2,7 @@
   "name": "buffalo-lsp",
   "displayName": "Buffalo LSP",
   "description": "Language Server Protocol support for Protocol Buffers with Buffalo build system",
-  "version": "0.1.0",
+  "version": "1.0.5",
   "publisher": "massonsky",
   "license": "MIT",
   "repository": {
@@ -30,6 +30,7 @@
     "lsp"
   ],
   "activationEvents": [
+    "onStartupFinished",
     "onLanguage:proto",
     "onLanguage:proto3",
     "workspaceContains:**/*.proto",
@@ -102,23 +103,43 @@
     "commands": [
       {
         "command": "buffalo.restartServer",
-        "title": "Buffalo: Restart Language Server"
+        "title": "Buffalo: Restart Language Server",
+        "icon": "$(refresh)"
       },
       {
         "command": "buffalo.showOutput",
-        "title": "Buffalo: Show Output Channel"
+        "title": "Buffalo: Show Output Channel",
+        "icon": "$(output)"
       },
       {
         "command": "buffalo.formatDocument",
-        "title": "Buffalo: Format Document"
+        "title": "Buffalo: Format Document",
+        "icon": "$(edit)"
       },
       {
         "command": "buffalo.generateCode",
-        "title": "Buffalo: Generate Code from Proto"
+        "title": "Buffalo: Generate Code from Proto",
+        "icon": "$(code)"
       },
       {
         "command": "buffalo.showDependencyGraph",
-        "title": "Buffalo: Show Dependency Graph"
+        "title": "Buffalo: Show Dependency Graph",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "buffalo.showInstallGuide",
+        "title": "Buffalo: Installation Guide",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "buffalo.checkHealth",
+        "title": "Buffalo: Check Health",
+        "icon": "$(heart)"
+      },
+      {
+        "command": "buffalo.showServerInfo",
+        "title": "Buffalo: Show Server Info",
+        "icon": "$(info)"
       }
     ],
     "menus": {
@@ -136,12 +157,28 @@
       ],
       "commandPalette": [
         {
-          "command": "buffalo.formatDocument",
-          "when": "resourceLangId == proto"
+          "command": "buffalo.restartServer"
         },
         {
-          "command": "buffalo.generateCode",
-          "when": "resourceLangId == proto"
+          "command": "buffalo.showOutput"
+        },
+        {
+          "command": "buffalo.formatDocument"
+        },
+        {
+          "command": "buffalo.generateCode"
+        },
+        {
+          "command": "buffalo.showDependencyGraph"
+        },
+        {
+          "command": "buffalo.showInstallGuide"
+        },
+        {
+          "command": "buffalo.checkHealth"
+        },
+        {
+          "command": "buffalo.showServerInfo"
         }
       ]
     },

@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package test;
+
+// Сообщение с синтаксической ошибкой
+message TestMessage {
+  string name = 1;
+  Ы // <- некорректный символ
+  int32 age = 2;
+  
+  // Дублирующий номер поля (ошибка)
+  string email = 2;
+  
+  // Отсутствует точка с запятой
+  string address = 3
+}
+
+// Неправильный синтаксис импорта
+import "неверный путь.proto"
+
+// Несуществующий тип
+message AnotherMessage {
+  НесуществующийТип field = 1;
+}

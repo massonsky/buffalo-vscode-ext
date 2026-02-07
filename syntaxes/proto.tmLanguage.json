@@ -97,11 +97,12 @@
             { "include": "#message" },
             { "include": "#enum" },
             { "include": "#oneof" },
-            { "include": "#map" },
+            { "include": "#map-field" },
             { "include": "#reserved" },
             { "include": "#extensions" },
             { "include": "#option" },
-            { "include": "#field" }
+            { "include": "#field-with-options" },
+            { "include": "#field-simple" }
           ]
         }
       ]
@@ -131,9 +132,7 @@
         "1": { "name": "variable.other.enummember.proto" },
         "2": { "name": "constant.numeric.proto" },
         "3": {
-          "patterns": [
-            { "include": "#field-options" }
-          ]
+          "patterns": [{ "include": "#field-options" }]
         }
       }
     },
@@ -191,30 +190,77 @@
           "patterns": [
             { "include": "#comments" },
             { "include": "#option" },
-            { "include": "#field" }
+            { "include": "#field-with-options" },
+            { "include": "#field-simple" }
           ]
         }
       ]
     },
-    "map": {
-      "match": "\\b(map)\\s*<\\s*(\\w+)\\s*,\\s*([\\w.]+)\\s*>\\s+(\\w+)\\s*=\\s*(\\d+)\\s*(\\[.*?\\])?\\s*;",
-      "captures": {
-        "1": { "name": "keyword.other.map.proto" },
-        "2": { "name": "storage.type.proto" },
-        "3": { "name": "entity.name.type.proto" },
-        "4": { "name": "variable.other.field.proto" },
-        "5": { "name": "constant.numeric.proto" },
-        "6": {
-          "patterns": [
-            { "include": "#field-options" }
-          ]
-        }
-      }
-    },
-    "field": {
+    "map-field": {
       "patterns": [
         {
-          "match": "\\b(optional|required|repeated)?\\s*([\\w.]+)\\s+(\\w+)\\s*=\\s*(\\d+)\\s*(\\[.*?\\])?\\s*;",
+          "comment": "Map field with multiline options",
+          "name": "meta.map-field.proto",
+          "begin": "\\b(map)\\s*<\\s*(\\w+)\\s*,\\s*([\\w.]+)\\s*>\\s+(\\w+)\\s*=\\s*(\\d+)\\s*(?=\\[)",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.map.proto" },
+            "2": { "name": "storage.type.proto" },
+            "3": { "name": "entity.name.type.proto" },
+            "4": { "name": "variable.other.field.proto" },
+            "5": { "name": "constant.numeric.proto" }
+          },
+          "end": ";",
+          "patterns": [
+            { "include": "#field-options-block" },
+            { "include": "#comments" }
+          ]
+        },
+        {
+          "comment": "Simple map field",
+          "match": "\\b(map)\\s*<\\s*(\\w+)\\s*,\\s*([\\w.]+)\\s*>\\s+(\\w+)\\s*=\\s*(\\d+)\\s*;",
+          "captures": {
+            "1": { "name": "keyword.other.map.proto" },
+            "2": { "name": "storage.type.proto" },
+            "3": { "name": "entity.name.type.proto" },
+            "4": { "name": "variable.other.field.proto" },
+            "5": { "name": "constant.numeric.proto" }
+          }
+        }
+      ]
+    },
+    "field-with-options": {
+      "patterns": [
+        {
+          "comment": "Field declaration followed by [...options...];",
+          "name": "meta.field.with-options.proto",
+          "begin": "\\b(optional|required|repeated)?\\s*([\\w.]+)\\s+(\\w+)\\s*=\\s*(\\d+)\\s*(?=\\[)",
+          "beginCaptures": {
+            "1": { "name": "keyword.other.field-rule.proto" },
+            "2": {
+              "patterns": [
+                { "include": "#scalar-types" },
+                { "include": "#type-reference" }
+              ]
+            },
+            "3": { "name": "variable.other.field.proto" },
+            "4": { "name": "constant.numeric.proto" }
+          },
+          "end": "\\];",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.field-options.end.proto" }
+          },
+          "patterns": [
+            { "include": "#field-options-block" },
+            { "include": "#comments" }
+          ]
+        }
+      ]
+    },
+    "field-simple": {
+      "patterns": [
+        {
+          "comment": "Simple field without options",
+          "match": "\\b(optional|required|repeated)?\\s*([\\w.]+)\\s+(\\w+)\\s*=\\s*(\\d+)\\s*;",
           "captures": {
             "1": { "name": "keyword.other.field-rule.proto" },
             "2": {
@@ -224,37 +270,102 @@
               ]
             },
             "3": { "name": "variable.other.field.proto" },
-            "4": { "name": "constant.numeric.proto" },
-            "5": {
-              "patterns": [
-                { "include": "#field-options" }
-              ]
-            }
+            "4": { "name": "constant.numeric.proto" }
           }
         }
       ]
     },
-    "field-options": {
+    "field-options-block": {
       "patterns": [
         {
+          "name": "meta.field-options.proto",
           "begin": "\\[",
-          "end": "\\]",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.field-options.begin.proto" }
+          },
+          "end": "(?=\\])",
           "patterns": [
             { "include": "#comments" },
-            { "include": "#strings" },
-            { "include": "#numbers" },
-            { "include": "#booleans" },
+            { "include": "#buffalo-option-annotation" },
+            { "include": "#custom-option-annotation" },
             {
               "match": "\\b(default|deprecated|packed|json_name)\\b",
               "name": "support.type.field-option.proto"
             },
-            {
-              "match": "\\((\\w+\\.)*\\w+\\)",
-              "name": "entity.name.type.option.custom.proto"
-            }
+            { "include": "#validation-object" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#booleans" }
           ]
         }
       ]
+    },
+    "buffalo-option-annotation": {
+      "patterns": [
+        {
+          "match": "(\\()(buffalo\\.validate\\.rules|buffalo\\.permissions|buffalo\\.[\\w.]+)(\\))",
+          "captures": {
+            "1": { "name": "punctuation.definition.annotation.begin.proto" },
+            "2": { "name": "entity.name.type.annotation.buffalo.proto" },
+            "3": { "name": "punctuation.definition.annotation.end.proto" }
+          }
+        },
+        {
+          "match": "(?<=\\))\\.(string|int32|int64|uint32|uint64|sint32|sint64|fixed32|fixed64|sfixed32|sfixed64|double|float|bool|bytes|message|repeated|map|any|timestamp|duration|enum)\\b",
+          "captures": {
+            "0": { "name": "storage.type.annotation.proto" }
+          }
+        }
+      ]
+    },
+    "custom-option-annotation": {
+      "match": "\\((\\w+\\.)*\\w+\\)",
+      "name": "entity.name.type.option.custom.proto"
+    },
+    "validation-object": {
+      "patterns": [
+        {
+          "begin": "\\{",
+          "beginCaptures": {
+            "0": { "name": "punctuation.section.braces.begin.proto" }
+          },
+          "end": "\\}",
+          "endCaptures": {
+            "0": { "name": "punctuation.section.braces.end.proto" }
+          },
+          "name": "meta.validation-object.proto",
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#validation-rule-key" },
+            { "include": "#validation-array" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#booleans" },
+            { "include": "#validation-object" }
+          ]
+        }
+      ]
+    },
+    "validation-array": {
+      "begin": "\\[",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.array.begin.proto" }
+      },
+      "end": "\\]",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.array.end.proto" }
+      },
+      "name": "meta.validation-array.proto",
+      "patterns": [
+        { "include": "#strings" },
+        { "include": "#numbers" },
+        { "include": "#booleans" },
+        { "include": "#comments" }
+      ]
+    },
+    "validation-rule-key": {
+      "match": "\\b(min_len|max_len|len|pattern|prefix|suffix|contains|not_contains|in|not_in|email|hostname|ip|uri|uuid|address|const|lt|lte|gt|gte|required|skip|ignore_empty|min_items|max_items|unique|min_pairs|max_pairs|no_sparse|keys|values|defined_only|min_bytes|max_bytes|well_known_regex|strict)\\b",
+      "name": "variable.parameter.proto"
     },
     "extend": {
       "patterns": [
@@ -266,10 +377,7 @@
             "2": { "name": "entity.name.type.proto" }
           },
           "end": "\\}",
-          "patterns": [
-            { "include": "#comments" },
-            { "include": "#field" }
-          ]
+          "patterns": [{ "include": "#comments" }, { "include": "#field" }]
         }
       ]
     },
@@ -326,17 +434,13 @@
           "name": "string.quoted.double.proto",
           "begin": "\"",
           "end": "\"",
-          "patterns": [
-            { "include": "#string-escape" }
-          ]
+          "patterns": [{ "include": "#string-escape" }]
         },
         {
           "name": "string.quoted.single.proto",
           "begin": "'",
           "end": "'",
-          "patterns": [
-            { "include": "#string-escape" }
-          ]
+          "patterns": [{ "include": "#string-escape" }]
         }
       ]
     },
