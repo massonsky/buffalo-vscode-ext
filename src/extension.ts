@@ -109,42 +109,84 @@ async function checkBuffaloInstalled(
   buffaloPath: string,
 ): Promise<BuffaloVersion | null> {
   return new Promise((resolve) => {
-    cp.exec(`${buffaloPath} --version`, { timeout: 5000 }, (error, stdout) => {
-      if (error) {
-        resolve(null);
-        return;
+    const parseVersionOutput = (stdout: string): BuffaloVersion | null => {
+      const lines = stdout
+        .trim()
+        .split("\n")
+        .map((l) => l.trim());
+
+      // Supports both:
+      // 1) "Buffalo version 1.10.1" (or "dev")
+      // 2) "Version:    1.10.1" from `buffalo version`
+      const firstLineMatch = lines[0]?.match(/^Buffalo version\s+(.+)$/i);
+      const tableMatch = lines
+        .find((l) => /^Version\s*:/i.test(l))
+        ?.match(/^Version\s*:\s*(.+)$/i);
+
+      const version =
+        firstLineMatch?.[1]?.trim() || tableMatch?.[1]?.trim() || "";
+      if (!version) {
+        return null;
       }
 
-      // Parse version output: "Buffalo version 1.10.1\nCommit: ...\nGo: ...\nPlatform: ..."
-      const lines = stdout.trim().split("\n");
-      const versionMatch = lines[0]?.match(/Buffalo version ([\d.]+)/);
       const commitMatch = lines
         .find((l) => l.startsWith("Commit:"))
-        ?.replace("Commit: ", "");
-      const goMatch = lines
-        .find((l) => l.startsWith("Go:"))
-        ?.replace("Go: ", "");
-      const platformMatch = lines
-        .find((l) => l.startsWith("Platform:"))
-        ?.replace("Platform: ", "");
+        ?.replace("Commit:", "")
+        .trim();
+      const goMatch =
+        lines
+          .find((l) => l.startsWith("Go:"))
+          ?.replace("Go:", "")
+          .trim() ||
+        lines
+          .find((l) => l.startsWith("Go Version:"))
+          ?.replace("Go Version:", "")
+          .trim();
+      const platformMatch =
+        lines
+          .find((l) => l.startsWith("Platform:"))
+          ?.replace("Platform:", "")
+          .trim() || "unknown";
 
-      if (versionMatch) {
-        resolve({
-          version: versionMatch[1],
-          commit: commitMatch || "unknown",
-          go: goMatch || "unknown",
-          platform: platformMatch || "unknown",
-        });
-      } else {
-        resolve(null);
-      }
-    });
+      return {
+        version,
+        commit: commitMatch || "unknown",
+        go: goMatch || "unknown",
+        platform: platformMatch,
+      };
+    };
+
+    cp.execFile(
+      buffaloPath,
+      ["--version"],
+      { timeout: 5000 },
+      (error, stdout) => {
+        if (!error) {
+          resolve(parseVersionOutput(stdout));
+          return;
+        }
+
+        // Fallback for builds where only `buffalo version` is available
+        cp.execFile(
+          buffaloPath,
+          ["version"],
+          { timeout: 5000 },
+          (fallbackError, fallbackStdout) => {
+            if (fallbackError) {
+              resolve(null);
+              return;
+            }
+            resolve(parseVersionOutput(fallbackStdout));
+          },
+        );
+      },
+    );
   });
 }
 
 async function checkLspSupport(buffaloPath: string): Promise<boolean> {
   return new Promise((resolve) => {
-    cp.exec(`${buffaloPath} lsp --help`, { timeout: 5000 }, (error) => {
+    cp.execFile(buffaloPath, ["lsp", "--help"], { timeout: 5000 }, (error) => {
       resolve(!error);
     });
   });
@@ -225,7 +267,7 @@ function getInstallGuideHtml(): string {
     <h2>📦 Method 1: Go Install (Recommended)</h2>
     <div class="method">
         <p>If you have Go 1.21+ installed:</p>
-        <pre>go install github.com/massonsky/buffalo@latest</pre>
+        <pre>go install github.com/massonsky/buffalo/cmd/buffalo@latest</pre>
         <p>Make sure <code>$GOPATH/bin</code> (usually <code>~/go/bin</code>) is in your PATH.</p>
     </div>
 
@@ -335,7 +377,9 @@ async function showLspNotSupportedError(
   if (selection === "Update Buffalo") {
     const terminal = vscode.window.createTerminal("Buffalo Update");
     terminal.show();
-    terminal.sendText("go install github.com/massonsky/buffalo@latest");
+    terminal.sendText(
+      "go install github.com/massonsky/buffalo/cmd/buffalo@latest",
+    );
     vscode.window.showInformationMessage(
       'Updating Buffalo... Run "Buffalo: Restart Server" after update completes.',
     );
@@ -551,11 +595,15 @@ async function startServer(context: vscode.ExtensionContext): Promise<void> {
       }
 
       // Check for missing semicolons in field declarations
-      if (/^\s*(optional|required|repeated)?\s*\w+\s+\w+\s*=\s*\d+\s*$/.test(line) &&
-          !line.trim().startsWith('//')) {
+      if (
+        /^\s*(optional|required|repeated)?\s*\w+\s+\w+\s*=\s*\d+\s*$/.test(
+          line,
+        ) &&
+        !line.trim().startsWith("//")
+      ) {
         const diagnostic = new vscode.Diagnostic(
           new vscode.Range(lineIndex, 0, lineIndex, line.length),
-          'Field declaration is missing semicolon',
+          "Field declaration is missing semicolon",
           vscode.DiagnosticSeverity.Error,
         );
         diagnostics.push(diagnostic);
@@ -568,7 +616,9 @@ async function startServer(context: vscode.ExtensionContext): Promise<void> {
   // Validate on open and change
   context.subscriptions.push(
     vscode.workspace.onDidOpenTextDocument(validateDocument),
-    vscode.workspace.onDidChangeTextDocument((e) => validateDocument(e.document)),
+    vscode.workspace.onDidChangeTextDocument((e) =>
+      validateDocument(e.document),
+    ),
     vscode.workspace.onDidCloseTextDocument((doc) =>
       diagnosticsCollection.delete(doc.uri),
     ),
